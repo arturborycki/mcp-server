@@ -1,6 +1,6 @@
 # Teradata
 
-A Model Context Protocol server that provides read-only access to PostgreSQL databases. This server enables LLMs to inspect database schemas and execute read-only queries.
+A Model Context Protocol server that provides read-only access to Teradata databases. This server enables LLMs to inspect database schemas and execute read-only queries.
 
 ## Components
 
@@ -32,16 +32,14 @@ To use this server with the Claude Desktop app, add the following configuration 
 ```json
 {
   "mcpServers": {
-    "postgres": {
+    "teradata": {
       "command": "docker",
       "args": [
         "run", 
         "-i", 
         "--rm", 
         "mcp/teradata", 
-        "host",
-        "user",
-        "password"]
+        "teradata://user:passwd@host"]
     }
   }
 }
@@ -57,17 +55,12 @@ To use this server with the Claude Desktop app, add the following configuration 
       "args": [
         "-y",
         "@modelcontextprotocol/server-teradata",
-        "host",
-        "user",
-        "password",
-        "db"
+        "teradata://user:passwd@host"
       ]
     }
   }
 }
 ```
-
-Replace `db` with your database name.
 
 ## Building
 

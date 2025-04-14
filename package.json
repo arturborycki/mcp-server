@@ -1,0 +1,25 @@
+{
+    "name": "@ab/servers",
+    "private": true,
+    "version": "0.1.0",
+    "description": "Model Context Protocol servers",
+    "license": "MIT",
+    "author": "Artur Borycki",
+    "homepage": "https://github.com/arturborycki/mcp-server",
+    "bugs": "https://github.com/arturborycki/mcp-server/issues",
+    "type": "module",
+    "workspaces": [
+      "src/*"
+    ],
+    "files": [],
+    "scripts": {
+      "build": "npm run build --workspaces",
+      "watch": "npm run watch --workspaces",
+      "publish-all": "npm publish --workspaces --access public",
+      "link-all": "npm link --workspaces"
+    },
+    "dependencies": {
+      "@ab/server-teradata": "*"
+    }
+  }
+  

@@ -83,7 +83,6 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   if (schema !== SCHEMA_PATH) {
     throw new Error("Invalid resource URI");
   }
-  //const con: teradatasql.TeradataConnection = teradatasql.connect({ host: sHost, user: sUser, password: sPassword });
   const cur: teradatasql.TeradataCursor = con.cursor();
   try {
     cur.execute(`sel ColumnName, CASE ColumnType 
@@ -175,7 +174,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request: {
 }) => {
   if (request.params.name === "query") {
     const sql: string = request.params.arguments?.sql as string;
-    //const con: teradatasql.TeradataConnection = await teradatasql.connect({ host: sHost, user: sUser, password: sPassword });
     const cur: teradatasql.TeradataCursor = await con.cursor();
     try {
       await cur.execute(sql);
@@ -197,7 +195,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request: {
 async function runServer() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Secure MCP Filesystem Server running on stdio");
 }
 
 runServer().catch((error) => {

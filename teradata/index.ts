@@ -12,7 +12,7 @@ import * as teradatasql from "teradatasql";
 
 const server = new Server(
   {
-    name: "example-servers/teradata",
+    name: "mcp-servers/teradata",
     version: "0.1.0",
   },
   {
@@ -37,28 +37,35 @@ resourceBaseUrl.protocol = "teradata:";
 const sHost: string = resourceBaseUrl.hostname;
 const sUser: string = resourceBaseUrl.username;
 const sPassword: string = resourceBaseUrl.password;
+const sDB: string = resourceBaseUrl.pathname.substring(1);
+
+const config = {
+  host: sHost,
+  user: sUser,
+  password: sPassword,
+  database: sDB 
+};
 
 type Rows = any[];
 type Row = any[] | null;
 
 const SCHEMA_PATH = "schema";
-const con: teradatasql.TeradataConnection = teradatasql.connect({ host: sHost, user: sUser, password: sPassword });
+const con: teradatasql.TeradataConnection = teradatasql.connect(config);
 
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
     const cur: teradatasql.TeradataCursor = con.cursor();
     try {
-      //if (sDB.length ===0) {
-      await cur.execute("select TableName from dbc.TablesV tv, dbc.UsersV uv where UPPER(uv.UserName) = UPPER('"+sUser+"') and UPPER(tv.DataBaseName) = UPPER(uv.DefaultDatabase) and tv.TableKind in ('T','V');");
-      //}
-      //else {
-      //cur.execute("select tv.TableName from dbc.TablesV tv where UPPER(tv.DatabaseName) = UPPER('wtest') and tv.TableKind in ('T','V')");
-      //}
+      if (sDB.length === 0) {
+        await cur.execute(`select TableName from dbc.TablesV tv, dbc.UsersV uv where UPPER(uv.UserName) = UPPER(USER) and UPPER(tv.DataBaseName) = UPPER(uv.DefaultDatabase) and tv.TableKind in ('T','V')`);
+      } else {
+        await cur.execute(`select TableName from dbc.TablesV tv where UPPER(tv.DatabaseName) = UPPER('${sDB}') and tv.TableKind in ('T','V')`);
+      }
       const rows: Rows = cur.fetchall();
 
       return { resources: rows.map((row) => ({
-        uri: new URL(`${row.TableName}/${SCHEMA_PATH}`, resourceBaseUrl).href,
+        uri: new URL(`${row[0]}/${SCHEMA_PATH}`, resourceBaseUrl).href,
         mimeType: "application/json",
-        name: `"${row.TableName}" database schema`,
+        name: `"${row[0]}" database schema`,
       })), 
     }; 
   } finally {
@@ -125,7 +132,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
           WHEN 'DT' THEN 'DATASET'
           WHEN '??' THEN 'STGEOMETRY''ANY_TYPE'
           END as CType
-      from DBC.ColumnsVX where tableName = $1`);
+      from DBC.ColumnsVX where tableName = '${tableName}'`);
       const rows: Rows = await cur.fetchall();
     return {
       contents: [

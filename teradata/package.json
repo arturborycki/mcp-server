@@ -1,11 +1,9 @@
 {
-  "name": "@modelcontextprotocol/server-teradata",
-  "version": "0.0.1",
+  "name": "@ab/server-teradata",
+  "version": "0.1.0",
   "description": "MCP server for interacting with Teradata databases",
   "license": "MIT",
-  "author": "AB",
-  "homepage": "https://modelcontextprotocol.io",
-  "bugs": "",
+  "author": "Artur Borycki",
   "type": "module",
   "bin": {
     "mcp-server-teradata": "dist/index.js"
@@ -20,11 +18,10 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.0.1",
-    "teradatasql": "20.0.28"
+    "teradatasql": "20.0.28",
+    "typescript": "^5.8.3"
   },
   "devDependencies": {
-    "@types/pg": "^8.11.10",
-    "shx": "^0.3.4",
-    "typescript": "^5.6.2"
+    "@types/node": "^22.14.1"
   }
 }

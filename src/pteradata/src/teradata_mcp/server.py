@@ -64,6 +64,89 @@ async def list_db() -> ResponseType:
         logger.error(f"Error listing schemas: {e}")
         return format_error_response(str(e))
 
+@mcp.tool(description="List objects in a database")
+async def list_objects(
+    db_name: str = Field(description="database name"),
+) -> ResponseType:
+    """List objects of in a database of the given name."""
+    try:
+        global _tdconn
+        cur = _tdconn.cursor()
+        rows = cur.execute("select TableName from dbc.TablesV tv where UPPER(tv.DatabaseName) = UPPER(?) and tv.TableKind in ('T','V');", [db_name])
+        return format_text_response(list([row for row in rows.fetchall()]))
+    except Exception as e:
+        logger.error(f"Error listing schemas: {e}")
+        return format_error_response(str(e))
+
+@mcp.tool(description="Show detailed information about a database tables")
+async def get_object_details(
+    db_name: str = Field(description="Database name"),
+    obj_name: str = Field(description="table name"),
+) -> ResponseType:
+    """Get detailed information about a database tables."""
+    if len(db_name) == 0:
+        db_name = "%"
+    if len(obj_name) == 0:
+        obj_name = "%"
+    try:
+        global _tdconn
+        cur = _tdconn.cursor()
+        rows = cur.execute(
+            """
+            sel TableName, ColumnName, CASE ColumnType
+          WHEN '++' THEN 'TD_ANYTYPE'
+          WHEN 'A1' THEN 'UDT'
+          WHEN 'AT' THEN 'TIME'
+          WHEN 'BF' THEN 'BYTE'
+          WHEN 'BO' THEN 'BLOB'
+          WHEN 'BV' THEN 'VARBYTE'
+          WHEN 'CF' THEN 'CHAR'
+          WHEN 'CO' THEN 'CLOB'
+          WHEN 'CV' THEN 'VARCHAR'
+          WHEN 'D' THEN  'DECIMAL'
+          WHEN 'DA' THEN 'DATE'
+          WHEN 'DH' THEN 'INTERVAL DAY TO HOUR'
+          WHEN 'DM' THEN 'INTERVAL DAY TO MINUTE'
+          WHEN 'DS' THEN 'INTERVAL DAY TO SECOND'
+          WHEN 'DY' THEN 'INTERVAL DAY'
+          WHEN 'F' THEN  'FLOAT'
+          WHEN 'HM' THEN 'INTERVAL HOUR TO MINUTE'
+          WHEN 'HR' THEN 'INTERVAL HOUR'
+          WHEN 'HS' THEN 'INTERVAL HOUR TO SECOND'
+          WHEN 'I1' THEN 'BYTEINT'
+          WHEN 'I2' THEN 'SMALLINT'
+          WHEN 'I8' THEN 'BIGINT'
+          WHEN 'I' THEN  'INTEGER'
+          WHEN 'MI' THEN 'INTERVAL MINUTE'
+          WHEN 'MO' THEN 'INTERVAL MONTH'
+          WHEN 'MS' THEN 'INTERVAL MINUTE TO SECOND'
+          WHEN 'N' THEN 'NUMBER'
+          WHEN 'PD' THEN 'PERIOD(DATE)'
+          WHEN 'PM' THEN 'PERIOD(TIMESTAMP WITH TIME ZONE)'
+          WHEN 'PS' THEN 'PERIOD(TIMESTAMP)'
+          WHEN 'PT' THEN 'PERIOD(TIME)'
+          WHEN 'PZ' THEN 'PERIOD(TIME WITH TIME ZONE)'
+          WHEN 'SC' THEN 'INTERVAL SECOND'
+          WHEN 'SZ' THEN 'TIMESTAMP WITH TIME ZONE'
+          WHEN 'TS' THEN 'TIMESTAMP'
+          WHEN 'TZ' THEN 'TIME WITH TIME ZONE'
+          WHEN 'UT' THEN 'UDT'
+          WHEN 'YM' THEN 'INTERVAL YEAR TO MONTH'
+          WHEN 'YR' THEN 'INTERVAL YEAR'
+          WHEN 'AN' THEN 'UDT'
+          WHEN 'XM' THEN 'XML'
+          WHEN 'JN' THEN 'JSON'
+          WHEN 'DT' THEN 'DATASET'
+          WHEN '??' THEN 'STGEOMETRY''ANY_TYPE'
+          END as CType
+      from DBC.ColumnsVX where upper(tableName) like upper(?) and upper(DatabaseName) like upper(?)
+            """
+                           , [obj_name,db_name])
+        return format_text_response(list([row for row in rows.fetchall()]))
+    except Exception as e:
+        logger.error(f"Error listing schemas: {e}")
+        return format_error_response(str(e))
+
 
 async def main():
     # Parse command line arguments

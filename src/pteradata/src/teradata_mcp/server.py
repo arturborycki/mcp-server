@@ -14,8 +14,7 @@ from urllib.parse import urlparse
 from pydantic import Field
 from .tdsql import obfuscate_password
 from .tdsql import TDConn
-
-
+from .prompt import PROMPT_TEMPL
 import mcp.types as types
 from mcp.server.fastmcp import FastMCP
 
@@ -147,21 +146,44 @@ async def get_object_details(
         logger.error(f"Error listing schemas: {e}")
         return format_error_response(str(e))
 
+@mcp.tool(description="What are the top features with missing values in a table")
+async def list_missing_val(
+    table_name: str = Field(description="table name"),
+) -> ResponseType:
+    """List of columns with count of null values."""
+    try:
+        global _tdconn
+        cur = _tdconn.cursor()
+        rows = cur.execute(f"select ColumnName, NullCount, NullPercentage from TD_ColumnSummary ( on {table_name} as InputTable using TargetColumns ('[:]')) as dt ORDER BY NullCount desc")
+        return format_text_response(list([row for row in rows.fetchall()]))
+    except Exception as e:
+        logger.error(f"Error evaluating features: {e}")
+        return format_error_response(str(e))
+    
+@mcp.tool(description="How many features have negative values in a table")
+async def list_negative_val(
+    table_name: str = Field(description="table name"),
+) -> ResponseType:
+    """List of columns with count of negative values."""
+    try:
+        global _tdconn
+        cur = _tdconn.cursor()
+        rows = cur.execute(f"select ColumnName, NegativeCount from TD_ColumnSummary ( on {table_name} as InputTable using TargetColumns ('[:]')) as dt ORDER BY NegativeCount desc")
+        return format_text_response(list([row for row in rows.fetchall()]))
+    except Exception as e:
+        logger.error(f"Error evaluating features: {e}")
+        return format_error_response(str(e))
 
 async def main():
-    # Parse command line arguments
     parser = argparse.ArgumentParser(description="Teradata MCP Server")
     parser.add_argument("database_url", help="Database connection URL", nargs="?")
     
-
     args = parser.parse_args()
 
-    
     mcp.add_tool(execute_sql, description="Execute any SQL query")
     
     logger.info(f"Starting Teradata MCP Server")
 
-    # Get database URL from environment variable or command line
     database_url = os.environ.get("DATABASE_URI", args.database_url)
 
     if not database_url:
@@ -170,7 +192,6 @@ async def main():
         )
 
     global _tdconn
-    # Initialize database connection pool
     try:
         _tdconn = TDConn(database_url)
         logger.info("Successfully connected to database and initialized connection")
@@ -181,17 +202,16 @@ async def main():
         logger.warning(
             "The MCP server will start but database operations will fail until a valid connection is established.",
         )
-
-    # Set up proper shutdown handling
+    
     try:
         loop = asyncio.get_running_loop()
         signals = (signal.SIGTERM, signal.SIGINT)
         for s in signals:
             loop.add_signal_handler(s, lambda s=s: asyncio.create_task(shutdown(s)))
     except NotImplementedError:
-        # Windows doesn't support signals properly
         logger.warning("Signal handling not supported on Windows")
         pass
+    logger.info("Registering handlers")
 
     await mcp.run_stdio_async()
 

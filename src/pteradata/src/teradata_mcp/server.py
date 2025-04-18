@@ -174,6 +174,37 @@ async def list_negative_val(
         logger.error(f"Error evaluating features: {e}")
         return format_error_response(str(e))
 
+@mcp.tool(description="How many distinct categories are there for column in the table")
+async def list_dist_cat(
+    table_name: str = Field(description="table name"),
+    col_name: str = Field(description="column name"),
+) -> ResponseType:
+    """List distinct categories in the column."""
+    try:
+        global _tdconn
+        cur = _tdconn.cursor()
+        rows = cur.execute(f"select * from TD_CategoricalSummary ( on {table_name} as InputTable using TargetColumns ('{col_name}')) as dt")
+        return format_text_response(list([row for row in rows.fetchall()]))
+    except Exception as e:
+        logger.error(f"Error evaluating features: {e}")
+        return format_error_response(str(e))
+
+
+@mcp.tool(description="What is the mean and standard deviation for column in table? Does it follow normal distribution?")
+async def stnd_dev(
+    table_name: str = Field(description="table name"),
+    col_name: str = Field(description="column name"),
+) -> ResponseType:
+    """Display standard deviation for column."""
+    try:
+        global _tdconn
+        cur = _tdconn.cursor()
+        rows = cur.execute(f"select * from TD_UnivariateStatistics ( on {table_name} as InputTable using TargetColumns ('{col_name}') Stats('MEAN','STD')) as dt ORDER BY 1,2")
+        return format_text_response(list([row for row in rows.fetchall()]))
+    except Exception as e:
+        logger.error(f"Error evaluating features: {e}")
+        return format_error_response(str(e))
+
 async def main():
     parser = argparse.ArgumentParser(description="Teradata MCP Server")
     parser.add_argument("database_url", help="Database connection URL", nargs="?")
